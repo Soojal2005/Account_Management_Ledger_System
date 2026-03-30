@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 const accountSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -6,7 +7,7 @@ const accountSchema = new mongoose.Schema({
 
   type: {
     type: String,
-    enum: ["asset", "liability", "income", "expense", "equity"],
+    enum: ["ASSET", "LIABILITY", "INCOME", "EXPENSE", "EQUITY"],
     required: true,
   },
 
@@ -22,3 +23,4 @@ const accountSchema = new mongoose.Schema({
 
  
 });
+export const Account = mongoose.model("Account", accountSchema);

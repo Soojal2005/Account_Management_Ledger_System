@@ -1,34 +1,21 @@
 import * as ledgerService from "./ledger.service.js";
 
 // 🔥 Create Transaction
-export const createTransaction = async (req, res, next) => {
-  try {
-    const result = await ledgerService.createTransaction(req.body);
-
-    res.status(201).json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
+// export const createTransaction = async (req, res, next) => {
+//   try {
+//     const result = await ledgerService.createTransaction(req.body);
+//     console.log("Transaction created:", result);
+//     res.status(201).json({
+//       success: true,
+//       data: result,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 // 🔥 Get Account Balance
-export const getAccountBalance = async (req, res, next) => {
-  try {
-    const { accountId } = req.params;
 
-    const result = await ledgerService.getAccountBalance(accountId);
-
-    res.json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
 
 // 🔥 Get Entries by Account
 export const getEntriesByAccount = async (req, res, next) => {
