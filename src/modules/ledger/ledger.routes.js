@@ -1,13 +1,13 @@
 import express from "express";
-import * as ledgerController from "./ledger.controller.js";
+import * as ledgerController from "./leddger.controller.js";
 
 const router = express.Router();
 
 // 🔥 Transactions
-router.post("/transactions", ledgerController.createTransaction);
+// router.post("/transactions", ledgerController.createTransaction);
 
 // 🔥 Account-based APIs
-router.get("/accounts/:accountId/balance", ledgerController.getAccountBalance);
+
 
 router.get("/accounts/:accountId/entries", ledgerController.getEntriesByAccount);
 
@@ -22,5 +22,6 @@ router.get("/reports/petty-cash", ledgerController.getPettyCashReportController)
 
 router.get("/reports/profit-loss", ledgerController.getProfitLossController);
 
-router.get("/reports/balance-sheet", getBalanceSheetController);
+router.get("/reports/balance-sheet", ledgerController.getBalanceSheetController);
+
 export default router;

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 const transactionSchema = new mongoose.Schema(
   {
     description: String,
@@ -42,3 +43,4 @@ const transactionSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+export const Transaction = mongoose.model("Transaction", transactionSchema);

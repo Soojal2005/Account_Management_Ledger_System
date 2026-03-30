@@ -1,124 +1,35 @@
-import mongoose from "mongoose";
-import { Entry } from "./entry.model.js";
-import {Transaction} from "../transactions/transaction.model.js";
-import { Account } from "../accounts/account.model.js";
 
 import mongoose from "mongoose";
-import Transaction from "../transactions/transaction.model.js";
-import Entry from "./entry.model.js";
+import {Transaction} from "../transactions/transaction.model.js";
+import {Entry} from "./entry.model.js";
 import AppError from "../../utils/AppError.js";
 
-export const createTransaction = async (data) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+// export const createTransaction = async ({
+//   description,
+//   paymentMode,
+//   companyId,
+//   entries,
+// }) => {
+//   // 1. Create transaction
+//   const transaction = await Transaction.create({
+//     description,
+//     paymentMode,
+//     companyId,
+//   });
 
-  try {
-    const {
-      description,
-      date,
-      entries,
-      paymentMode,
-      counterparty,
-      companyId,
-    } = data;
+//   // 2. Attach transactionId to entries
+//   const entriesWithTransactionId = entries.map((entry) => ({
+//     ...entry,
+//     transactionId: transaction._id,
+//   }));
 
-    // ✅ 1. Validate entries exist
-    if (!entries || entries.length < 2) {
-      throw new AppError("At least two entries are required", 400);
-    }
+//   // 3. Insert entries
+//   await Entry.insertMany(entriesWithTransactionId);
 
-    // ✅ 2. Validate double-entry system
-    const totalDebit = entries
-      .filter((e) => e.type === "DEBIT")
-      .reduce((sum, e) => sum + e.amount, 0);
+//   return transaction;
+// };
 
-    const totalCredit = entries
-      .filter((e) => e.type === "CREDIT")
-      .reduce((sum, e) => sum + e.amount, 0);
 
-    if (totalDebit !== totalCredit) {
-      throw new AppError("Debit and Credit must be equal", 400);
-    }
-
-    // 🔥 3. Decide transaction category
-    let transactionCategory = "NORMAL";
-    if (paymentMode === "CASH") {
-      transactionCategory = "PETTY_CASH";
-    }
-
-    // ✅ 4. Create Transaction
-    const [transaction] = await Transaction.create(
-      [
-        {
-          description,
-          date,
-          paymentMode,
-          counterparty,
-          transactionCategory,
-          companyId,
-        },
-      ],
-      { session }
-    );
-
-    // ✅ 5. Create Entries
-    const entryDocs = entries.map((e) => ({
-      transactionId: transaction._id,
-      accountId: e.accountId,
-      type: e.type,
-      amount: e.amount,
-      date: date || new Date(),
-      companyId,
-    }));
-
-    const createdEntries = await Entry.insertMany(entryDocs, { session });
-
-    // ✅ 6. Link entries to transaction (optional but good)
-    transaction.entries = createdEntries.map((e) => ({
-      accountId: e.accountId,
-      type: e.type,
-      amount: e.amount,
-    }));
-
-    await transaction.save({ session });
-
-    // ✅ 7. Commit
-    await session.commitTransaction();
-    session.endSession();
-
-    return transaction;
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
-  }
-};
-
-export const getAccountBalance = async (accountId) => {
-  const result = await Entry.aggregate([
-    {
-      $match: {
-        accountId: new mongoose.Types.ObjectId(accountId),
-      },
-    },
-    {
-      $group: {
-        _id: "$accountId",
-        balance: {
-          $sum: {
-            $cond: [
-              { $eq: ["$type", "debit"] },
-              "$amount",
-              { $multiply: ["$amount", -1] },
-            ],
-          },
-        },
-      },
-    },
-  ]);
-
-  return result[0]?.balance || 0;
-};
 
 
 export const getTransactionHistory = async (
@@ -411,86 +322,88 @@ export const getProfitLossReport = async (companyId, startDate, endDate) => {
   };
 };
 
-export const getBalanceSheet = async (companyId, startDate, endDate) => {
-  const matchStage = { companyId };
-
-  if (startDate && endDate) {
-    matchStage.date = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate),
-    };
-  }
-
+export const getBalanceSheet = async () => {
   const result = await Entry.aggregate([
-    // 🔥 Join accounts
+    {
+      $group: {
+        _id: "$accountId",
+        debit: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "DEBIT"] }, "$amount", 0],
+          },
+        },
+        credit: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "CREDIT"] }, "$amount", 0],
+          },
+        },
+      },
+    },
     {
       $lookup: {
         from: "accounts",
-        localField: "accountId",
+        localField: "_id",
         foreignField: "_id",
         as: "account",
       },
     },
-    { $unwind: "$account" },
-
-    // ✅ Filter relevant account types
     {
-      $match: {
-        ...matchStage,
-        "account.type": { $in: ["ASSET", "LIABILITY", "EQUITY"] },
-      },
-    },
-
-    // 🔥 Calculate signed amount
-    {
-      $addFields: {
-        signedAmount: {
-          $cond: [
-            // ASSET logic
-            { $eq: ["$account.type", "ASSET"] },
-            {
-              $cond: [
-                { $eq: ["$type", "DEBIT"] },
-                "$amount",
-                { $multiply: ["$amount", -1] },
-              ],
-            },
-            // LIABILITY + EQUITY logic
-            {
-              $cond: [
-                { $eq: ["$type", "CREDIT"] },
-                "$amount",
-                { $multiply: ["$amount", -1] },
-              ],
-            },
-          ],
-        },
-      },
-    },
-
-    // 🔥 Group totals
-    {
-      $group: {
-        _id: "$account.type",
-        total: { $sum: "$signedAmount" },
-      },
+      $unwind: "$account",
     },
   ]);
 
-  let assets = 0;
-  let liabilities = 0;
-  let equity = 0;
+  const assets = [];
+  const liabilities = [];
+  const equity = [];
 
-  result.forEach((item) => {
-    if (item._id === "ASSET") assets = item.total;
-    if (item._id === "LIABILITY") liabilities = item.total;
-    if (item._id === "EQUITY") equity = item.total;
-  });
+  let totalAssets = 0;
+  let totalLiabilities = 0;
+  let totalEquity = 0;
+
+  for (const item of result) {
+    const { debit, credit, account } = item;
+
+    let balance = 0;
+
+    // 🔥 NORMALIZATION (same as before)
+    if (["ASSET", "EXPENSE"].includes(account.type)) {
+      balance = debit - credit;
+    } else {
+      balance = credit - debit;
+    }
+
+    const accountData = {
+      accountId: account._id,
+      name: account.name,
+      balance,
+    };
+
+    if (account.type === "ASSET") {
+      assets.push(accountData);
+      totalAssets += balance;
+    }
+
+    if (account.type === "LIABILITY") {
+      liabilities.push(accountData);
+      totalLiabilities += balance;
+    }
+
+    if (account.type === "EQUITY") {
+      equity.push(accountData);
+      totalEquity += balance;
+    }
+  }
+
+  const isBalanced =
+    totalAssets === totalLiabilities + totalEquity;
 
   return {
     assets,
     liabilities,
     equity,
-    isBalanced: assets === liabilities + equity,
+    totalAssets,
+    totalLiabilities,
+    totalEquity,
+    isBalanced,
   };
 };
