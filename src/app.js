@@ -4,7 +4,7 @@ import ledgerRoutes from "./modules/ledger/ledger.routes.js";
 import transactionRoutes from "./modules/transactions/transaction.route.js";  
 import dotenv from "dotenv";
 import cors from "cors";
-
+import authRoutes from "./Auth/auth.routes.js";
 
 dotenv.config();
 const app = express();
@@ -17,4 +17,5 @@ app.get("/", (req, res) => {
 app.use("/api/v1/account", accountRoutes);
 app.use("/api/v1/ledger", ledgerRoutes);
 app.use("/api/v1/transaction", transactionRoutes);
+app.use("/api/v1/auth", authRoutes);
 export default app;
