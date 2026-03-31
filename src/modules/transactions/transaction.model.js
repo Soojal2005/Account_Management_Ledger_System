@@ -7,12 +7,18 @@ const transactionSchema = new mongoose.Schema(
 
     paymentMode: {
       type: String,
-      enum: ["CASH", "UPI", "NEFT"],
+      enum: ["CASH", "UPI", "NEFT", "CARD"],
       required: true,
     },
 
     counterparty: {
       type: String,
+    },
+
+    expenseCategory: {
+      type: String,
+      enum: ["PETTY", "REGULAR"],
+      required: true,
     },
 
     transactionCategory: {
@@ -41,6 +47,6 @@ const transactionSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 export const Transaction = mongoose.model("Transaction", transactionSchema);
