@@ -149,52 +149,33 @@ export const getEntriesByAccount = async (accountId) => {
   return entries;
 };
 
+
 export const getLedger = async (accountId) => {
-  const entries = await Entry.aggregate([
-    {
-      $match: {
-        accountId: new mongoose.Types.ObjectId(accountId),
-      },
-    },
-    {
-      $lookup: {
-        from: "transactions",
-        localField: "transactionId",
-        foreignField: "_id",
-        as: "transaction",
-      },
-    },
-    {
-      $unwind: "$transaction",
-    },
-    {
-      $project: {
-        type: 1,
-        amount: 1,
-        date: "$transaction.date",
-        description: "$transaction.description",
-      },
-    },
-    {
-      $sort: { date: 1 },
-    },
-  ]);
+  // ✅ Step 1: Fetch entries
+  const entries = await Entry.find({ accountId })
+    .populate("transactionId", "description")
+    .sort({ createdAt: 1 });
 
-  let balance = 0;
+  // ✅ Step 2: Initialize running balance
+  let runningBalance = 0;
 
+  // ✅ Step 3: Build ledger
   const ledger = entries.map((entry) => {
-    if (entry.type === "debit") {
-      balance += entry.amount;
-    } else {
-      balance -= entry.amount;
+    const isDebit = entry.type === "DEBIT";
+    const isCredit = entry.type === "CREDIT";
+
+    if (isDebit) {
+      runningBalance += entry.amount;
+    } else if (isCredit) {
+      runningBalance -= entry.amount;
     }
 
     return {
-      date: entry.date,
-      description: entry.description,
-      debit: entry.type === "debit" ? entry.amount : 0,
-      credit: entry.type === "credit" ? entry.amount : 0,
-      balance,
+      date: entry.createdAt,
+      description: entry.transactionId?.description || "",
+      debit: isDebit ? entry.amount : 0,
+      credit: isCredit ? entry.amount : 0,
+      balance: runningBalance,
     };
   });
 
@@ -207,7 +188,7 @@ export const getPettyCashReport = async (companyId, startDate, endDate) => {
     type: "DEBIT",
   };
 
-  // 🔥 Add date filter if provided
+  // ✅ Date filter
   if (startDate && endDate) {
     matchStage.date = {
       $gte: new Date(startDate),
@@ -216,6 +197,7 @@ export const getPettyCashReport = async (companyId, startDate, endDate) => {
   }
 
   return await Entry.aggregate([
+    // 🔗 Join transaction
     {
       $lookup: {
         from: "transactions",
@@ -226,34 +208,42 @@ export const getPettyCashReport = async (companyId, startDate, endDate) => {
     },
     { $unwind: "$transaction" },
 
+    // ✅ Correct filtering
     {
       $match: {
         ...matchStage,
-        "transaction.transactionCategory": "PETTY_CASH",
+        "transaction.expenseCategory": "PETTY", // 🔥 FIXED
       },
     },
 
+    // 🔥 Group by account + payment mode
     {
       $group: {
-        _id: "$accountId",
+        _id: {
+          accountId: "$accountId",
+          paymentMode: "$transaction.paymentMode",
+        },
         totalAmount: { $sum: "$amount" },
       },
     },
 
+    // 🔗 Get account name
     {
       $lookup: {
         from: "accounts",
-        localField: "_id",
+        localField: "_id.accountId",
         foreignField: "_id",
         as: "account",
       },
     },
     { $unwind: "$account" },
 
+    // 🎯 Final output
     {
       $project: {
         _id: 0,
         accountName: "$account.name",
+        paymentMode: "$_id.paymentMode",
         totalAmount: 1,
       },
     },

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jerry Accounts - Dashboard</title>
+
+  <style>
+    body { font-family: Arial; background: #111; color: #fff; padding: 20px; }
+    h2 { border-bottom: 1px solid #444; }
+    input, button { margin: 5px; padding: 8px; border-radius: 5px; border: none; }
+    button { background: #00adb5; color: white; cursor: pointer; }
+    .card { background: #1e1e1e; padding: 15px; margin-bottom: 20px; border-radius: 10px; }
+    pre { background: #000; padding: 10px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+
+<h1>🔥 Jerry Accounts API Dashboard</h1>
+
+<!-- CREATE ACCOUNT -->
+<div class="card">
+  <h2>Create Account</h2>
+  <input id="accName" placeholder="Account Name" />
+  <input id="accType" placeholder="Type (ASSET, LIABILITY...)" />
+  <button onclick="createAccount()">Create</button>
+</div>
+
+<!-- GET ACCOUNT BALANCE -->
+<div class="card">
+  <h2>Account Balance</h2>
+  <input id="balanceId" placeholder="Account ID" />
+  <button onclick="getBalance()">Fetch</button>
+</div>
+
+<!-- CREATE TRANSACTION -->
+<div class="card">
+  <h2>Create Transaction</h2>
+  <input id="desc" placeholder="Description" />
+  <input id="amount" type="number" placeholder="Amount" />
+  <input id="debitAcc" placeholder="Debit Account ID" />
+  <input id="creditAcc" placeholder="Credit Account ID" />
+  <button onclick="createTransaction()">Create</button>
+</div>
+
+<!-- LEDGER -->
+<div class="card">
+  <h2>Ledger</h2>
+  <input id="ledgerId" placeholder="Account ID" />
+  <button onclick="getLedger()">Ledger</button>
+  <button onclick="getEntries()">Entries</button>
+</div>
+
+<!-- TRANSACTION HISTORY -->
+<div class="card">
+  <h2>Transaction History</h2>
+  <button onclick="getHistory()">Fetch</button>
+</div>
+
+<!-- TRIAL BALANCE -->
+<div class="card">
+  <h2>Trial Balance</h2>
+  <button onclick="getTrial()">Fetch</button>
+</div>
+
+<!-- REPORTS -->
+<div class="card">
+  <h2>Reports</h2>
+  <button onclick="getPettyCash()">Petty Cash</button>
+  <button onclick="getPL()">Profit & Loss</button>
+  <button onclick="getBS()">Balance Sheet</button>
+</div>
+
+<!-- PETTY CASH TRANSACTIONS -->
+<div class="card">
+  <h2>Petty Cash Transactions</h2>
+  <button onclick="getPettyTransactions()">Fetch</button>
+</div>
+
+<h2>Response</h2>
+<pre id="output"></pre>
+
+<script>
+const BASE = "http://localhost:5000/api/v1";
+
+const output = document.getElementById("output");
+
+function show(data) {
+  output.innerText = JSON.stringify(data, null, 2);
+}
+
+// CREATE ACCOUNT
+async function createAccount() {
+  const name = accName.value;
+  const type = accType.value;
+
+  const res = await fetch(`${BASE}/account/creation`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, type }),
+  });
+
+  show(await res.json());
+}
+
+// ACCOUNT BALANCE
+async function getBalance() {
+  const id = balanceId.value;
+  if (!id) return alert("Enter Account ID");
+
+  const res = await fetch(`${BASE}/account/${id}/balance`);
+  show(await res.json());
+}
+
+// CREATE TRANSACTION
+async function createTransaction() {
+  const res = await fetch(`${BASE}/transaction/create-transaction`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      description: desc.value,
+      amount: Number(amount.value),
+      entries: [
+        { accountId: debitAcc.value, type: "DEBIT" },
+        { accountId: creditAcc.value, type: "CREDIT" }
+      ]
+    }),
+  });
+
+  show(await res.json());
+}
+
+// LEDGER
+async function getLedger() {
+  const id = ledgerId.value;
+  if (!id) return alert("Enter Account ID");
+
+  const res = await fetch(`${BASE}/ledger/accounts/${id}/ledger`);
+  show(await res.json());
+}
+
+// ENTRIES
+async function getEntries() {
+  const id = ledgerId.value;
+  if (!id) return alert("Enter Account ID");
+
+  const res = await fetch(`${BASE}/ledger/accounts/${id}/entries`);
+  show(await res.json());
+}
+
+// HISTORY
+async function getHistory() {
+  const res = await fetch(`${BASE}/ledger/transactions/history`);
+  show(await res.json());
+}
+
+// TRIAL BALANCE
+async function getTrial() {
+  const res = await fetch(`${BASE}/ledger/trial-balance`);
+  show(await res.json());
+}
+
+// REPORTS
+async function getPettyCash() {
+  const res = await fetch(`${BASE}/ledger/reports/petty-cash`);
+  show(await res.json());
+}
+
+async function getPL() {
+  const res = await fetch(`${BASE}/ledger/reports/profit-loss`);
+  show(await res.json());
+}
+
+async function getBS() {
+  const res = await fetch(`${BASE}/ledger/reports/balance-sheet`);
+  show(await res.json());
+}
+
+// PETTY CASH TRANSACTIONS
+async function getPettyTransactions() {
+  const res = await fetch(`${BASE}/transaction/petty-cash`);
+  show(await res.json());
+}
+</script>
+
+</body>
+</html>

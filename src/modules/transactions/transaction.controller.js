@@ -1,21 +1,21 @@
 import {
-  createTransactionService,
+  createTransaction,
   getPettyCashTransactionsService,
 } from "./transaction.service.js";
 
-export const createTransaction = async (req, res, next) => {
-  try {
-    const transaction = await createTransactionService(req.body);
 
+export const createTransactions = async (req, res, next) => { 
+  try {
+    const result = await createTransaction(req.body);
+    console.log("Transaction created:", result);
     res.status(201).json({
       success: true,
-      data: transaction,
+      data: result,
     });
-  } catch (err) {
-    next(err);
+  } catch (error) {
+    next(error);
   }
 };
-
 
 export const getPettyCashTransactions = async (req, res, next) => {
   try {
