@@ -54,3 +54,40 @@ export const getAccountBalance = async (accountId) => {
 
   return result[0]?.balance || 0;
 };
+
+// ✅ Get Single Account
+export const getAccountById = async (accountId) => {
+  const account = await Account.findById(accountId);
+
+  if (!account) {
+    throw new AppError("Account not found", 404);
+  }
+
+  return account;
+};
+export const updateAccount = async (accountId, updateData) => {
+  const account = await Account.findByIdAndUpdate(
+    accountId,
+    updateData,
+    { new: true }
+  );
+
+  if (!account) {
+    throw new AppError("Account not found", 404);
+  }
+
+  return account;
+};
+export const deleteAccount = async (accountId) => {
+  const account = await Account.findByIdAndUpdate(
+    accountId,
+    { isActive: false },
+    { new: true }
+  );
+
+  if (!account) {
+    throw new AppError("Account not found", 404);
+  }
+
+  return account;
+};

@@ -53,3 +53,94 @@ export const getPettyCashTransactionsService = async (companyId) => {
     .populate("entries.accountId", "name type")
     .sort({ date: -1 });
 };
+
+
+export const receiveMoney = async (data) => {
+  const {
+    companyId,
+    amount,
+    cashAccountId,
+    customerId,
+    incomeAccountId,
+    description,
+  } = data;
+
+  // ✅ Validate accounts
+  const cash = await Account.findById(cashAccountId);
+  const income = await Account.findById(incomeAccountId);
+
+  if (!cash || !income) {
+    throw new AppError("Invalid accounts", 400);
+  }
+
+  if (
+    cash.companyId.toString() !== companyId ||
+    income.companyId.toString() !== companyId
+  ) {
+    throw new AppError("Accounts must belong to same company", 400);
+  }
+
+  // ✅ Create double entry transaction
+  const transaction = await createTransaction({
+    companyId,
+    description,
+    customerId: customerId || null,
+    entries: [
+      {
+        accountId: cashAccountId,
+        type: "DEBIT",
+        amount,
+      },
+      {
+        accountId: incomeAccountId,
+        type: "CREDIT",
+        amount,
+      },
+    ],
+  });
+
+  return transaction;
+};
+
+export const sendMoney = async (data) => {
+  const {
+    companyId,
+    amount,
+    cashAccountId,
+    expenseAccountId,
+    description,
+  } = data;
+
+  const cash = await Account.findById(cashAccountId);
+  const expense = await Account.findById(expenseAccountId);
+
+  if (!cash || !expense) {
+    throw new AppError("Invalid accounts", 400);
+  }
+
+  if (
+    cash.companyId.toString() !== companyId ||
+    expense.companyId.toString() !== companyId
+  ) {
+    throw new AppError("Accounts must belong to same company", 400);
+  }
+
+  const transaction = await createTransaction({
+    companyId,
+    description,
+    entries: [
+      {
+        accountId: expenseAccountId,
+        type: "DEBIT",
+        amount,
+      },
+      {
+        accountId: cashAccountId,
+        type: "CREDIT",
+        amount,
+      },
+    ],
+  });
+
+  return transaction;
+};

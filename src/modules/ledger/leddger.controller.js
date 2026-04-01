@@ -36,16 +36,14 @@ export const getEntriesByAccount = async (req, res, next) => {
 // 🔥 Get Ledger (with running balance)
 export const getLedger = async (req, res, next) => {
   try {
-    const { accountId } = req.params;
-    
-     if (!mongoose.Types.ObjectId.isValid(accountId)) {
+     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({
         success: false,
         message: "Invalid Account ID",
       });
     }
 
-    const result = await ledgerService.getLedger(accountId);
+    const result = await ledgerService.getLedger(req.params.id, req.user.companyId);
 
     res.json({
       success: true,

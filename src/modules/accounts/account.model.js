@@ -11,7 +11,17 @@ const accountSchema = new mongoose.Schema({
     required: true,
   },
 
-  // optional but powerful
+  parentAccountId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Account",
+  },
+
+  companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
+
   subtype: {
     type: String,
   },
@@ -20,7 +30,6 @@ const accountSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  
- 
-});
+
+},{timestamps: true});
 export const Account = mongoose.model("Account", accountSchema);

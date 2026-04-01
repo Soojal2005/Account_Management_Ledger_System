@@ -150,9 +150,9 @@ export const getEntriesByAccount = async (accountId) => {
 };
 
 
-export const getLedger = async (accountId) => {
+export const getLedger = async (accountId, companyId) => {
   // ✅ Step 1: Fetch entries
-  const entries = await Entry.find({ accountId })
+  const entries = await Entry.find({ accountId, companyId })
     .populate("transactionId", "description")
     .sort({ createdAt: 1 });
 
