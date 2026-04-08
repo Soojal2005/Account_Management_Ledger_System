@@ -8,7 +8,7 @@ import {
 import { authorize,protect } from "../../Auth/auth.middleware.js";
 const router = express.Router();
 router.use(protect);
-router.post("/create-transaction",authorize("OWNER", "ADMIN"), createTransactions);
+router.post("/create-transaction", authorize("ADMIN", "ACCOUNTANT"), createTransactions);
 router.get("/petty-cash", getPettyCashTransactions);
 router.post("/receive", receive_Money);
 router.post("/send", send_Money);
