@@ -2,7 +2,7 @@ import { Account } from "./account.model.js";
 import AppError from "../../utils/AppError.js";
 import { Entry } from "../ledger/entry.model.js";
 import mongoose from "mongoose";
-export const createAccount = async ({ name, balance, type }) => {
+export const createAccount = async ({ name, balance, type},user) => {
   // 🔥 1. Validations
   if (!name) {
     throw new AppError("Account name is required", 400);
@@ -22,7 +22,8 @@ export const createAccount = async ({ name, balance, type }) => {
   const account = await Account.create({
     name,
     type,
-    balance: balance || 0, // optional
+    balance: balance || 0,
+    companyId : user.companyId // optional
   });
 
   return account;
@@ -90,4 +91,15 @@ export const deleteAccount = async (accountId) => {
   }
 
   return account;
+};
+
+export const getAccountsByCompany = async (companyId, user) => {
+  // Optional: enforce company ownership (recommended)
+  if (!user.companyId || user.companyId.toString() !== companyId) {
+    throw new AppError("Unauthorized access to company accounts", 403);
+  }
+
+  const accounts = await Account.find({ companyId });
+
+  return accounts;
 };

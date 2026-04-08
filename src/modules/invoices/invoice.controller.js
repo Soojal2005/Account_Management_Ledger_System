@@ -3,7 +3,10 @@ import * as invoiceService from "./invoice.service.js";
 // Create
 export const createInvoice = async (req, res, next) => {
   try {
-    const invoice = await invoiceService.createInvoice(req.body);
+    const invoice = await invoiceService.createInvoice({
+      ...req.body,
+      companyId: req.user.companyId,
+    });
 
     res.status(201).json({
       success: true,
@@ -19,7 +22,10 @@ export const markInvoicePaid = async (req, res, next) => {
   try {
     const result = await invoiceService.markInvoicePaid(
       req.params.invoiceId,
-      req.body
+      {
+        ...req.body,
+        companyId: req.user.companyId,
+      }
     );
 
     res.json({

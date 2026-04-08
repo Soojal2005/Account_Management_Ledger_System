@@ -6,13 +6,13 @@ const router = express.Router();
 
 router.use(protect);
 
-router.post("/", accountController.createAccount);
+router.post("/creation", accountController.createAccount);
 
 router.get("/company/:companyId", accountController.getAccounts);
 
 router.get("/:accountId", accountController.getAccount);
 
-router.put("/:accountId", accountController.updateAccount);
+router.put("/update/:accountId", accountController.updateAccount);
 
 router.delete("/:accountId", accountController.deleteAccount);
 

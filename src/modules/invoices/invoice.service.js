@@ -12,6 +12,14 @@ export const createInvoice = async (data) => {
     throw new AppError("Customer not found", 404);
   }
 
+  if (customer.companyId.toString() !== companyId.toString()) {
+    throw new AppError("Customer does not belong to your company", 403);
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new AppError("At least one invoice item is required", 400);
+  }
+
   // 💰 Calculate total
   const totalAmount = items.reduce(
     (sum, item) => sum + item.quantity * item.price, 0 );
@@ -25,12 +33,16 @@ export const createInvoice = async (data) => {
 };
 
 export const markInvoicePaid = async (invoiceId, data) => {
-  const { cashAccountId, incomeAccountId } = data;
+  const { cashAccountId, incomeAccountId, companyId } = data;
 
   const invoice = await Invoice.findById(invoiceId);
 
   if (!invoice) {
     throw new AppError("Invoice not found", 404);
+  }
+
+  if (invoice.companyId.toString() !== companyId.toString()) {
+    throw new AppError("Unauthorized invoice access", 403);
   }
 
   if (invoice.status === "PAID") {

@@ -3,7 +3,10 @@ import * as customerService from "./customer.service.js";
 // Create
 export const createCustomer = async (req, res, next) => {
   try {
-    const customer = await customerService.createCustomer(req.body);
+    const customer = await customerService.createCustomer({
+      ...req.body,
+      companyId: req.user.companyId,
+    });
 
     res.status(201).json({
       success: true,
@@ -17,9 +20,7 @@ export const createCustomer = async (req, res, next) => {
 // Get All
 export const getCustomers = async (req, res, next) => {
   try {
-    const customers = await customerService.getCustomers(
-      req.params.companyId
-    );
+    const customers = await customerService.getCustomers(req.user.companyId);
 
     res.json({
       success: true,

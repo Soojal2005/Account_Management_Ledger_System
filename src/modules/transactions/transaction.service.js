@@ -2,9 +2,25 @@ import {Transaction }from "./transaction.model.js";
 import AppError from "../../utils/AppError.js";
 import mongoose from "mongoose";
 import { Entry } from "../ledger/entry.model.js";
+import { Account } from "../accounts/account.model.js";
 
 export const createTransaction = async (data) => {
-  const { description, paymentMode, companyId, entries } = data;
+  const {
+    description,
+    paymentMode = "CASH",
+    companyId,
+    entries,
+    expenseCategory = "REGULAR",
+    transactionCategory = "NORMAL",
+  } = data;
+
+  if (!companyId) {
+    throw new AppError("companyId is required", 400);
+  }
+
+  if (!Array.isArray(entries) || entries.length < 2) {
+    throw new AppError("At least two entries are required", 400);
+  }
 
   // ✅ Validation
   const totalDebit = entries
@@ -16,7 +32,7 @@ export const createTransaction = async (data) => {
     .reduce((sum, e) => sum + e.amount, 0);
 
   if (totalDebit !== totalCredit) {
-    throw new Error("Debit and Credit must be equal");
+    throw new AppError("Debit and Credit must be equal", 400);
   }
 
   // ✅ Create transaction
@@ -24,6 +40,8 @@ export const createTransaction = async (data) => {
     description,
     paymentMode,
     companyId,
+    expenseCategory,
+    transactionCategory,
     entries: []
   });
 
@@ -33,7 +51,8 @@ export const createTransaction = async (data) => {
       accountId: entry.accountId,
       type: entry.type,
       amount: entry.amount,
-      transactionId: transaction._id
+      transactionId: transaction._id,
+      companyId,
     }))
   );
 
@@ -84,6 +103,9 @@ export const receiveMoney = async (data) => {
   const transaction = await createTransaction({
     companyId,
     description,
+    paymentMode: "CASH",
+    expenseCategory: "REGULAR",
+    transactionCategory: "NORMAL",
     customerId: customerId || null,
     entries: [
       {
@@ -128,6 +150,9 @@ export const sendMoney = async (data) => {
   const transaction = await createTransaction({
     companyId,
     description,
+    paymentMode: "CASH",
+    expenseCategory: "REGULAR",
+    transactionCategory: "NORMAL",
     entries: [
       {
         accountId: expenseAccountId,

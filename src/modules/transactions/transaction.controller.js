@@ -7,7 +7,10 @@ import { sendMoney } from "./transaction.service.js";
 
 export const createTransactions = async (req, res, next) => { 
   try {
-    const result = await createTransaction(req.body);
+    const result = await createTransaction({
+      ...req.body,
+      companyId: req.user.companyId,
+    });
     console.log("Transaction created:", result);
     res.status(201).json({
       success: true,
@@ -20,9 +23,7 @@ export const createTransactions = async (req, res, next) => {
 
 export const getPettyCashTransactions = async (req, res, next) => {
   try {
-    const { companyId } = req.body; // adjust later with auth
-
-    const data = await getPettyCashTransactionsService(companyId);
+    const data = await getPettyCashTransactionsService(req.user.companyId);
 
     res.status(200).json({
       success: true,
@@ -37,7 +38,10 @@ export const getPettyCashTransactions = async (req, res, next) => {
 
 export const receive_Money = async (req, res, next) => {
   try {
-    const result = await receiveMoney(req.body);
+    const result = await receiveMoney({
+      ...req.body,
+      companyId: req.user.companyId,
+    });
     res.status(201).json({
       success: true,
       data: result,
@@ -48,7 +52,10 @@ export const receive_Money = async (req, res, next) => {
 };
 export const send_Money = async (req, res, next) => {
   try {
-    const result = await transactionService.sendMoney(req.body);
+    const result = await sendMoney({
+      ...req.body,
+      companyId: req.user.companyId,
+    });
 
     res.status(201).json({
       success: true,

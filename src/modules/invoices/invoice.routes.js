@@ -1,13 +1,14 @@
 import express from "express";
 import * as invoiceController from "./invoice.controller.js";
-import { protect } from "../../Auth/auth.middleware.js";
+import { protect,allowRoles } from "../../Auth/auth.middleware.js";
 
 const router = express.Router();
 
 router.use(protect);
 
 // Create invoice
-router.post("/", invoiceController.createInvoice);
+router.post("/",
+  allowRoles("ADMIN", "ACCOUNTANT"), invoiceController.createInvoice);
 
 // Mark as paid
 router.post("/:invoiceId/pay", invoiceController.markInvoicePaid);

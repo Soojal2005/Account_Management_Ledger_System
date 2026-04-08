@@ -3,7 +3,7 @@ import * as accountService from "./account.service.js";
 // Create Account
 export const createAccount = async (req, res, next) => {
   try {
-    const account = await accountService.createAccount(req.body);
+    const account = await accountService.createAccount(req.body,req.user);
 
     res.status(201).json({
       success: true,
@@ -17,8 +17,9 @@ export const createAccount = async (req, res, next) => {
 // Get Accounts
 export const getAccounts = async (req, res, next) => {
   try {
-    const accounts = await accountService.getAccounts(
-      req.params.companyId
+    const accounts = await accountService.getAccountsByCompany(
+      req.params.companyId,
+      req.user
     );
 
     res.json({

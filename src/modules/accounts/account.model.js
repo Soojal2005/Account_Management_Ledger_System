@@ -9,6 +9,7 @@ const accountSchema = new mongoose.Schema({
     type: String,
     enum: ["ASSET", "LIABILITY", "INCOME", "EXPENSE", "EQUITY"],
     required: true,
+    default: "ASSET"
   },
 
   parentAccountId: {
