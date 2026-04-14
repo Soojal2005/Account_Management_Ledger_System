@@ -356,7 +356,7 @@ export const getProfitLossReport = async (companyId, startDate, endDate) => {
 
   const dateMatch = {};
   if (startDate && endDate) {
-    dateMatch.date = {
+    dateMatch["transaction.date"] = {
       $gte: new Date(startDate),
       $lte: new Date(endDate),
     };
