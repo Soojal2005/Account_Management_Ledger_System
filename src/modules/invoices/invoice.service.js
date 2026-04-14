@@ -1,11 +1,16 @@
 import { Invoice } from "./invoice.model.js";
 import { Customer } from "../Customers/customer.model.js";
+import mongoose from "mongoose";
 import  AppError  from "../../utils/AppError.js";
 import {createTransaction}  from "../transactions/transaction.service.js";
-
+import {Account} from "../accounts/account.model.js";
 // ✅ Create Invoice
 export const createInvoice = async (data) => {
   const { customerId, companyId, items } = data;
+
+  if (!mongoose.Types.ObjectId.isValid(customerId)) {
+    throw new AppError("Invalid customerId", 400);
+  }
 
   const customer = await Customer.findById(customerId);
   if (!customer) {
@@ -32,8 +37,12 @@ export const createInvoice = async (data) => {
   return invoice;
 };
 
-export const markInvoicePaid = async (invoiceId, data) => {
-  const { cashAccountId, incomeAccountId, companyId } = data;
+export const markInvoicePaid = async (invoiceId, user) => {
+  const companyId = user.companyId;
+
+  if (!mongoose.Types.ObjectId.isValid(invoiceId)) {
+    throw new AppError("Invalid invoiceId", 400);
+  }
 
   const invoice = await Invoice.findById(invoiceId);
 
@@ -49,28 +58,49 @@ export const markInvoicePaid = async (invoiceId, data) => {
     throw new AppError("Invoice already paid", 400);
   }
 
-  // 🔥 Create transaction
+  // ✅ Get accounts automatically
+  const cashAccount = await Account.findOne({
+    companyId,
+    name: "Updated Cash", // use your existing one
+  });
+
+  const incomeAccount = await Account.findOne({
+    companyId,
+    type: "INCOME",
+  });
+
+  if (!cashAccount) {
+    throw new AppError("Cash account not found", 400);
+  }
+
+  if (!incomeAccount) {
+    throw new AppError("Income account not found", 400);
+  }
+
+  // ✅ Update invoice
+  invoice.status = "PAID";
+  await invoice.save();
+
+  // 🔥 Create transaction (THIS IS THE CORE LINK)
   await createTransaction({
-    companyId: invoice.companyId,
-    description: "Invoice payment",
+    description: "Invoice Payment",
+    paymentMode: "CASH",
+    companyId,
+    transactionCategory: "NORMAL",
     customerId: invoice.customerId,
     entries: [
       {
-        accountId: cashAccountId,
+        accountId: cashAccount._id,
         type: "DEBIT",
         amount: invoice.totalAmount,
       },
       {
-        accountId: incomeAccountId,
+        accountId: incomeAccount._id,
         type: "CREDIT",
         amount: invoice.totalAmount,
       },
     ],
   });
-
-  // ✅ Update invoice
-  invoice.status = "PAID";
-  await invoice.save();
 
   return invoice;
 };
