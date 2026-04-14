@@ -7,7 +7,7 @@ const router = express.Router();
 router.use(protect);
 
 // Create invoice
-router.post("/",
+router.post("/create",
   allowRoles("ADMIN", "ACCOUNTANT"), invoiceController.createInvoice);
 
 // Mark as paid
