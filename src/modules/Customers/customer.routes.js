@@ -7,7 +7,7 @@ const router = express.Router();
 router.use(protect);
 
 // Create
-router.post("/", customerController.createCustomer);
+router.post("/create", customerController.createCustomer);
 
 // Get all
 router.get("/company/:companyId", customerController.getCustomers);
