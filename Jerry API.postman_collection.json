@@ -3,227 +3,613 @@
     "_postman_id": "f671c8fe-ef26-4456-ad49-e115d07c08cb",
     "name": "Jerry API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "44743288"
+    "description": "Aligned with implemented routes in src/app.js and module route files."
   },
   "item": [
     {
-      "name": "Register",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n    \"email\": \"admin@test.com\",\r\n    \"password\": \"123456\"\r\n}",
-          "options": {
-            "raw": {
-              "language": "json"
-            }
-          }
-        },
-        "url": {
-          "raw": "{{baseUrl}}/auth/login",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "auth",
-            "login"
-          ]
-        },
-        "description": "## Register\n\nCreates a new user account along with an associated company. On success, returns the created user object, company object, and a JWT authentication token.\n\n---\n\n### Method & URL\n\n```\nPOST {{baseUrl}}/auth/register\n```\n\n---\n\n### Request Body\n\nContent-Type: `application/json`\n\n| Field | Type | Required | Description |\n|---|---|---|---|\n| `name` | `string` | Yes | Full name of the user being registered. |\n| `email` | `string` | Yes | Email address of the user. Must be unique. |\n| `password` | `string` | Yes | Plain-text password for the account. Stored as a bcrypt hash. |\n| `role` | `string` | Yes | Role assigned to the user (e.g., `ADMIN`). |\n| `companyName` | `string` | Yes | Name of the company to be created and associated with this user. |\n\n**Example Request Body**\n\n```json\n{\n  \"name\": \"Soojal Bajaj Jain\",\n  \"email\": \"soojal_11_@example.com\",\n  \"password\": \"123456\",\n  \"role\": \"ADMIN\",\n  \"companyName\": \"Soojal Pvt Ltd\"\n}\n```\n\n---\n\n### Response\n\n**Status:** `201 Created`\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"user\": {\n      \"_id\": \"69ce5fd53dce7bacfb369a8d\",\n      \"name\": \"Soojal Bajaj Jain\",\n      \"email\": \"soojal_11_@example.com\",\n      \"password\": \"$2b$10$...(hashed)\",\n      \"role\": \"ADMIN\",\n      \"companyId\": \"69ce5fd53dce7bacfb369a8f\",\n      \"createdAt\": \"2026-04-02T12:23:49.434Z\",\n      \"updatedAt\": \"2026-04-02T12:23:49.445Z\"\n    },\n    \"company\": {\n      \"_id\": \"69ce5fd53dce7bacfb369a8f\",\n      \"name\": \"Soojal Pvt Ltd\",\n      \"ownerId\": \"69ce5fd53dce7bacfb369a8d\",\n      \"employees\": [\"69ce5fd53dce7bacfb369a8d\"],\n      \"createdAt\": \"2026-04-02T12:23:49.438Z\",\n      \"updatedAt\": \"2026-04-02T12:23:49.438Z\"\n    },\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}\n```\n\n**Response Fields**\n\n| Field | Type | Description |\n|---|---|---|\n| `success` | `boolean` | Indicates whether the request was successful. |\n| `data.user` | `object` | The newly created user object, including `_id`, `name`, `email`, `role`, `companyId`, and timestamps. The `password` field is returned as a bcrypt hash. |\n| `data.company` | `object` | The newly created company object, including `_id`, `name`, `ownerId`, `employees` array, and timestamps. |\n| `data.token` | `string` | A JWT token to be used for authenticating subsequent requests. |\n\n---\n\n### Notes\n\n- After a successful registration, the test script automatically saves the returned `token` to the active environment variable `token` via `pm.environment.set(\"token\", ...)`. This token can then be referenced as `{{token}}` in subsequent requests that require authentication."
-      },
-      "response": []
-    },
-    {
-      "name": "login",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "description": "## Login\n\nAuthenticates an existing user with their email and password. On success, returns the authenticated user's details along with a JWT token used for subsequent authorized requests.\n\n---\n\n### Request Details\n\n| Property | Value |\n|----------|-------|\n| **Method** | `POST` |\n| **URL** | `{{baseUrl}}/auth/login` |\n\n---\n\n### Request Body\n\nThe request body must be sent as **raw JSON**.\n\n| Parameter | Type | Required | Description |\n|-----------|------|----------|-------------|\n| `email` | `string` | Yes | The registered email address of the user. |\n| `password` | `string` | Yes | The account password for the user. |\n\n**Example:**\n```json\n{\n    \"email\": \"soojal_11_@example.com\",\n    \"password\": \"123456\"\n}\n```\n\n---\n\n### Response\n\n#### Success — `200 OK`\n\nReturns a JSON object containing the authenticated user's profile and a JWT token.\n\n```json\n{\n    \"success\": true,\n    \"data\": {\n        \"user\": {\n            \"_id\": \"69ce5fd53dce7bacfb369a8d\",\n            \"name\": \"Soojal Bajaj Jain\",\n            \"email\": \"soojal_11_@example.com\",\n            \"role\": \"ADMIN\",\n            \"companyId\": \"69ce5fd53dce7bacfb369a8f\",\n            \"createdAt\": \"2026-04-02T12:23:49.434Z\",\n            \"updatedAt\": \"2026-04-02T12:23:49.445Z\"\n        },\n        \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n    }\n}\n```\n\n**Response Fields:**\n\n| Field | Type | Description |\n|-------|------|-------------|\n| `success` | `boolean` | Indicates whether the request was successful. |\n| `data.user._id` | `string` | Unique identifier of the user. |\n| `data.user.name` | `string` | Full name of the authenticated user. |\n| `data.user.email` | `string` | Email address of the authenticated user. |\n| `data.user.role` | `string` | Role assigned to the user (e.g., `ADMIN`). |\n| `data.user.companyId` | `string` | ID of the company the user belongs to. |\n| `data.user.createdAt` | `string` | ISO 8601 timestamp of when the account was created. |\n| `data.user.updatedAt` | `string` | ISO 8601 timestamp of the last account update. |\n| `data.token` | `string` | JWT token to be used for authenticating subsequent requests. |\n\n---\n\n### Notes\n\n- After a successful login, the `token` from `data.token` is **automatically saved** to the active environment as the `token` variable. This token is then available for use in other requests that require authorization via `{{token}}`."
-      },
-      "response": []
-    },
-    {
-      "name": "Create Account",
-      "event": [
+      "name": "Auth",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test(\"Account created\", function () {",
-              "    pm.response.to.have.status(201);",
-              "});",
-              "",
-              "const res = pm.response.json();",
-              "pm.environment.set(\"companyId\", res.data.companyId);",
-              "pm.environment.set(\"accountId\", res.data._id);",
-              "console.log(\"ID:\", res.data._id);"
-            ],
-            "type": "text/javascript",
-            "packages": {},
-            "requests": {}
-          }
-        }
-      ],
-      "request": {
-        "auth": {
-          "type": "bearer",
-          "bearer": [
+          "name": "Register",
+          "event": [
             {
-              "key": "token",
-              "value": "{{token}}",
-              "type": "string"
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const res = pm.response.json();",
+                  "if (res?.data?.token) pm.collectionVariables.set('token', res.data.token);",
+                  "if (res?.data?.company?._id) pm.collectionVariables.set('companyId', res.data.company._id);",
+                  "if (res?.data?.user?._id) pm.collectionVariables.set('userId', res.data.user._id);"
+                ]
+              }
             }
-          ]
-        },
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\r\n  \"name\": \"Cash\",\r\n  \"type\": \"ASSET\",\r\n  \"balance\": 1000\r\n}"
-        },
-        "url": {
-          "raw": "{{baseUrl}}/account/creation",
-          "host": [
-            "{{baseUrl}}"
           ],
-          "path": [
-            "account",
-            "creation"
-          ]
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Admin User\",\n  \"email\": \"admin@test.com\",\n  \"password\": \"123456\",\n  \"role\": \"ADMIN\",\n  \"companyName\": \"Demo Pvt Ltd\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
         },
-        "description": "## Create Account\n\nCreates a new account for a company.\n\n**Method:** `POST`  \n**Endpoint:** `{{baseUrl}}/account/creation`\n\n---\n\n### Request Headers\n\n| Key | Value | Description |\n|---|---|---|\n| Content-Type | application/json | Request body must be JSON |\n\n---\n\n### Request Body\n\nSend a JSON object with the following fields:\n\n| Field | Type | Required | Description |\n|---|---|---|---|\n| `name` | string | Yes | The name of the account (e.g. `\"Cash\"`) |\n| `type` | string | Yes | The account type. Example values: `ASSET` |\n\n**Example:**\n```json\n{\n  \"name\": \"Cash\",\n  \"type\": \"ASSET\"\n}\n```\n\n---\n\n### Response\n\n**Status:** `201 Created`\n\nReturns the newly created account object.\n\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"name\": \"Cash\",\n    \"type\": \"ASSET\",\n    \"companyId\": \"69ce5fd53dce7bacfb369a8f\",\n    \"_id\": \"69cf955240137de431571c06\",\n    \"createdAt\": \"2026-04-03T10:24:18.301Z\",\n    \"updatedAt\": \"2026-04-03T10:24:18.301Z\",\n    \"__v\": 0\n  }\n}\n```\n\n| Field | Type | Description |\n|---|---|---|\n| `success` | boolean | Indicates whether the request was successful |\n| `data._id` | string | Unique identifier of the created account |\n| `data.name` | string | Name of the account |\n| `data.type` | string | Type of the account |\n| `data.companyId` | string | ID of the company the account belongs to |\n| `data.createdAt` | string (ISO 8601) | Timestamp when the account was created |\n| `data.updatedAt` | string (ISO 8601) | Timestamp when the account was last updated |"
-      },
-      "response": []
-    },
-    {
-      "name": "Account_By_CompanyId",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{token}}"
-          }
-        ],
-        "url": {
-          "raw": "{{baseUrl}}/account/company/{{companyId}}",
-          "host": [
-            "{{baseUrl}}"
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const res = pm.response.json();",
+                  "if (res?.data?.token) pm.collectionVariables.set('token', res.data.token);",
+                  "if (res?.data?.user?.companyId) pm.collectionVariables.set('companyId', res.data.user.companyId);"
+                ]
+              }
+            }
           ],
-          "path": [
-            "account",
-            "company",
-            "{{companyId}}"
-          ]
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Accounts",
+      "item": [
+        {
+          "name": "Create Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const res = pm.response.json();",
+                  "if (res?.data?._id) pm.collectionVariables.set('accountId', res.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cash\",\n  \"type\": \"ASSET\",\n  \"balance\": 1000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account/creation",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "creation"]
+            }
+          },
+          "response": []
         },
-        "description": "Retrieves account information associated with a specific company.\n\n**Method:** GET  \n**Endpoint:** `{{baseUrl}}/account/company/{{companyId}}`\n\n### Path Variables\n| Variable | Description |\n|---|---|\n| `companyId` | The unique identifier of the company whose account details are being fetched. |\n\n### Headers\n| Key | Value | Description |\n|---|---|---|\n| `Authorization` | `Bearer {{token}}` | Bearer token used for authenticating the request. |\n\n### Responses\n- **200 OK** – Returns the account details linked to the specified company ID.\n- **401 Unauthorized** – The provided token is missing or invalid.\n- **404 Not Found** – No account found for the given company ID.\n\n### Environment Variables\n- `baseUrl` – The base URL of the API server.\n- `companyId` – The ID of the company to look up.\n- `token` – The authentication token for the current session."
-      },
-      "response": []
+        {
+          "name": "Get Accounts By Company",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/account/company/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "company", "{{companyId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Single Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/account/{{accountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "{{accountId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cash Updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/account/update/{{accountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "update", "{{accountId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/account/{{accountId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["account", "{{accountId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
     },
     {
-      "name": "Get_Singe_ACC.",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "description": "## 📄 Get Account by ID\n\n### 🔗 Endpoint\n\n``` bash\nGET /api/v1/account/:accountId\n\n ```\n\n---\n\n### 🔐 Authentication\n\nRequires JWT token  \nHeader:\n\n``` bash\nAuthorization: Bearer <token>\n\n ```\n\n---\n\n### 📌 Description\n\nFetch a single account by its unique `accountId`.\n\nEnsures that only authorized users can access account data.\n\n---\n\n### 📥 Request Params\n\n| Param | Type | Required | Description |\n| --- | --- | --- | --- |\n| accountId | String | ✅ Yes | Unique account ID |\n\n---\n\n### 📤 Response (Success - 200)\n\n```\n{  \"success\": true,  \"data\": {    \"_id\": \"69cfaffe4a2906a4037adbca\",    \"name\": \"Cash\",    \"type\": \"ASSET\",    \"companyId\": \"69ce5fd53dce7bacfb369a8f\",    \"createdAt\": \"2026-04-03T12:18:06.487Z\",    \"updatedAt\": \"2026-04-03T12:18:06.487Z\"  }}\n\n ```\n\n---\n\n### ❌ Error Responses\n\n#### 401 Unauthorized\n\n- Missing or invalid token\n    \n\n#### 404 Not Found\n\n- Account does not exist\n    \n\n#### 403 Forbidden (if implemented)\n\n- Accessing another user's/company's account"
-      },
-      "response": []
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Create Transaction",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Office Expense\",\n  \"paymentMode\": \"CASH\",\n  \"expenseCategory\": \"REGULAR\",\n  \"transactionCategory\": \"NORMAL\",\n  \"entries\": [\n    { \"accountId\": \"{{accountId}}\", \"type\": \"DEBIT\", \"amount\": 1000 },\n    { \"accountId\": \"{{counterAccountId}}\", \"type\": \"CREDIT\", \"amount\": 1000 }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transaction/create-transaction",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction", "create-transaction"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Petty Cash Transactions",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/transaction/petty-cash",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction", "petty-cash"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Receive Money",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Receive from client\",\n  \"amount\": 500\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transaction/receive",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction", "receive"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send Money",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{token}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Send to vendor\",\n  \"amount\": 300\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/transaction/send",
+              "host": ["{{baseUrl}}"],
+              "path": ["transaction", "send"]
+            }
+          },
+          "response": []
+        }
+      ]
     },
     {
-      "name": "Update_Acc.",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "description": "# 🚀 Delete Account\n\n## 🔗 Endpoint\n\n```\nDELETE /api/v1/account/:accountId\n\n ```\n\n---\n\n## 🔐 Authentication\n\n```\nAuthorization: Bearer <token>\n\n ```\n\n---\n\n## 📌 Description\n\nDeletes an account by its `accountId`.\n\nOnly authorized users can delete accounts.\n\n---\n\n## 📥 Request Params\n\n| Param | Type | Required | Description |\n| --- | --- | --- | --- |\n| accountId | String | ✅ Yes | Account ID |\n\n---\n\n## 📤 Response (Success - 200)\n\n```\n{  \"success\": true,  \"message\": \"Account deleted successfully\"}\n\n ```\n\n---\n\n## ❌ Error Responses\n\n- **401 Unauthorized** → Missing/invalid token\n    \n- **404 Not Found** → Account doesn’t exist\n    \n- **403 Forbidden** → Not allowed to delete\n    \n\n---\n\n## 🧪 Test Script\n\n```\npm.test(\"Status is 200\", () => {  pm.response.to.have.status(200);});pm.test(\"Delete success message\", () => {  const res = pm.response.json();  pm.expect(res.message).to.include(\"deleted\");});\n\n ```\n\n---\n\n## 🧠 Notes\n\n- Uses `req.params.accountId`\n    \n- Uses `req.user` for authorization\n    \n- After deletion → account should not be retrievable"
-      },
-      "response": []
+      "name": "Ledger",
+      "item": [
+        {
+          "name": "Entries By Account",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/accounts/{{accountId}}/entries",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "accounts", "{{accountId}}", "entries"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Account Balance",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/accounts/{{accountId}}/balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "accounts", "{{accountId}}", "balance"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ledger By Account",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/accounts/{{accountId}}/ledger",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "accounts", "{{accountId}}", "ledger"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transaction History",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/transactions/history/{{accountId}}?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "transactions", "history", "{{accountId}}"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trial Balance",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/trial-balance",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "trial-balance"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Petty Cash Report",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/reports/petty-cash?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "reports", "petty-cash"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate", "value": "2026-12-31" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Profit Loss",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/reports/profit-loss?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "reports", "profit-loss"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate", "value": "2026-12-31" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Balance Sheet",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/ledger/reports/balance-sheet?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["ledger", "reports", "balance-sheet"],
+              "query": [
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate", "value": "2026-12-31" }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     },
     {
-      "name": "Create_Transaction",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "description": "StartFragment\n\n## 🔹 Create Transaction\n\nCreates a new financial transaction using the **double-entry accounting system**, ensuring that total debits equal total credits.\n\n---\n\n## 📌 Endpoint\n\n```\nPOST /api/v1/transactions\n\n ```\n\n---\n\n## 🔐 Authorization\n\nThis endpoint requires authentication.\n\n**Header:**\n\n```\nAuthorization: Bearer <JWT_TOKEN>\n\n ```\n\n👉 The `companyId` is automatically derived from the authenticated user (`req.user.companyId`) and **should NOT be passed in the request body**.\n\n---\n\n## 📥 Request Body\n\n```\n{  \"description\": \"Office Expense\",  \"paymentMode\": \"CASH\",  \"expenseCategory\": \"OFFICE\",  \"transactionCategory\": \"EXPENSE\",  \"entries\": [    {      \"accountId\": \"67d8f1c2a9e4b2f3a1234567\",      \"amount\": 1000,      \"type\": \"DEBIT\"    },    {      \"accountId\": \"67d8f1c2a9e4b2f3a1234568\",      \"amount\": 1000,      \"type\": \"CREDIT\"    }  ]}\n\n ```\n\n---\n\n## 📤 Response\n\n```\n{  \"_id\": \"transaction_id\",  \"description\": \"Office Expense\",  \"paymentMode\": \"CASH\",  \"companyId\": \"company_id\",  \"entries\": [    {      \"accountId\": \"67d8f1c2a9e4b2f3a1234567\",      \"amount\": 1000,      \"type\": \"DEBIT\"    },    {      \"accountId\": \"67d8f1c2a9e4b2f3a1234568\",      \"amount\": 1000,      \"type\": \"CREDIT\"    }  ],  \"createdAt\": \"2026-04-03T10:00:00.000Z\"}\n\n ```\n\n---\n\n## ⚙️ Business Rules\n\n- Total **DEBIT amount must equal CREDIT amount**\n    \n- Each entry must contain:\n    \n    - Valid `accountId` (MongoDB ObjectId)\n        \n    - `amount > 0`\n        \n    - `type` must be either `DEBIT` or `CREDIT`\n        \n- `companyId` is **injected from JWT** (not accepted from client)\n    \n- All accounts must belong to the same company (data isolation)\n    \n\n---\n\n## ❌ Error Cases\n\n### 1\\. Invalid ObjectId\n\n```\nCast to ObjectId failed\n\n ```\n\n👉 Happens when `accountId` or `companyId` is not a valid MongoDB ID.\n\n---\n\n### 2\\. Unbalanced Transaction\n\n```\nDebit and Credit must be equal\n\n ```\n\n---\n\n### 3\\. Missing Required Fields\n\n```\nValidationError: expenseCategory is required\n\n ```\n\n---\n\n### 4\\. Unauthorized\n\n```\n401 Unauthorized\n\n ```\n\n---\n\n## 🧠 Notes\n\n- This API follows **double-entry accounting principles**\n    \n- Each transaction creates multiple ledger entries\n    \n- Used for:\n    \n    - Expense tracking\n        \n    - Income recording\n        \n    - Internal transfers\n        \n\nEndFragment"
-      },
-      "response": []
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res?.data?._id) pm.collectionVariables.set('customerId', res.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"email\": \"acme@example.com\",\n  \"phone\": \"9999999999\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers By Company",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers/company/{{companyId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "company", "{{companyId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp Updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customers", "{{customerId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
     },
     {
-      "name": "Transaction_History",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Ledger_By_Account",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Account_ID_Balance",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Trial_Balance",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Profit-Loss",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "balance_sheet",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Invoice",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Cutomer_creation",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
-    },
-    {
-      "name": "Invoice_payment",
-      "request": {
-        "method": "GET",
-        "header": []
-      },
-      "response": []
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Create Invoice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res?.data?._id) pm.collectionVariables.set('invoiceId', res.data._id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"items\": [\n    { \"description\": \"Service A\", \"quantity\": 1, \"rate\": 1000 }\n  ],\n  \"total\": 1000\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoices/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Invoice Paid",
+          "request": {
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }] },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1000,\n  \"mode\": \"CASH\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/invoices/{{invoiceId}}/pay",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "{{invoiceId}}", "pay"]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "event": [
@@ -231,29 +617,25 @@
       "listen": "prerequest",
       "script": {
         "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
+        "exec": []
       }
     },
     {
       "listen": "test",
       "script": {
         "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
+        "exec": []
       }
     }
   ],
   "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:5000/api/v1"
-    }
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
+    { "key": "token", "value": "" },
+    { "key": "companyId", "value": "" },
+    { "key": "accountId", "value": "" },
+    { "key": "counterAccountId", "value": "" },
+    { "key": "customerId", "value": "" },
+    { "key": "invoiceId", "value": "" },
+    { "key": "userId", "value": "" }
   ]
 }

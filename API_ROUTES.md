@@ -1,484 +1,252 @@
-# API Routes Documentation
+# Jerry Accounts API Routes
 
-Complete API reference for the **Account Management Ledger System**.
+This reference is aligned to the currently implemented Express routes.
 
-## 📑 Table of Contents
+## Base
 
-- [Base Information](#base-information)
-- [Authentication](#authentication-module)
-- [Accounts](#accounts-module)
-- [Transactions](#transactions-module)
-- [Invoices](#invoices-module)
-- [Customers](#customers-module)
-- [Ledger](#ledger-module)
-- [Error Handling](#error-handling)
-- [Rate Limiting](#rate-limiting)
-- [Best Practices](#best-practices)
+- Base URL: http://localhost:5000/api/v1
+- Auth header for protected routes: Authorization: Bearer <JWT_TOKEN>
 
----
+## Auth
 
-## Base Information
+### Register
 
-### Base URL
-```
-http://localhost:5000/api/v1
-```
+- Method: POST
+- Path: /api/v1/auth/register
+- Auth: No
 
-### API Version
-```
-v1
-```
+Example body:
 
-### Authentication Header (Required for all endpoints unless noted)
-```
-Authorization: Bearer <JWT_TOKEN>
-```
-
-### Response Format
-
-All responses follow this standard format:
-
-**Success Response:**
 ```json
 {
-  "success": true,
-  "message": "Optional success message",
-  "data": {}
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "123456",
+  "role": "ADMIN",
+  "companyName": "Demo Pvt Ltd"
 }
 ```
 
-**Error Response:**
+Success: 201
+
+### Login
+
+- Method: POST
+- Path: /api/v1/auth/login
+- Auth: No
+
+Example body:
+
 ```json
 {
-  "success": false,
-  "message": "Error description",
-  "error": {
-    "code": "ERROR_CODE",
-    "details": "Additional context"
-  }
+  "email": "admin@example.com",
+  "password": "123456"
 }
 ```
 
-### Available Roles
+Success: 200
 
-- `ADMIN` - Full system access, can manage all resources
-- `ACCOUNTANT` - Can create/modify transactions and view ledgers
-- `MANAGER` - Read-only access with limited report capabilities
-- `USER` - Basic account access and transaction viewing
+## Accounts
 
-### HTTP Status Codes
+All routes protected.
 
-| Code | Meaning | Use Case |
-|------|---------|----------|
-| 200 | OK | Successful GET request |
-| 201 | Created | Successful POST request |
-| 204 | No Content | Successful DELETE request |
-| 400 | Bad Request | Invalid request parameters |
-| 401 | Unauthorized | Missing or invalid JWT token |
-| 403 | Forbidden | Insufficient permissions for resource |
-| 404 | Not Found | Resource doesn't exist |
-| 409 | Conflict | Resource already exists or constraint violation |
-| 422 | Unprocessable Entity | Invalid data format or validation failed |
-| 429 | Too Many Requests | Rate limit exceeded |
-| 500 | Internal Server Error | Server error, check logs |
-| 503 | Service Unavailable | Database unreachable |
+### Create Account
 
----
+- Method: POST
+- Path: /api/v1/account/creation
 
-## Authentication Module
+Example body:
 
-### 1. User Registration
-
-**Endpoint:**
-```
-POST /api/v1/auth/register
-```
-
-**Role Access:** Public (no authentication required)
-
-**Request Body:**
 ```json
 {
-  "email": "user@example.com",
-  "password": "SecurePassword123!",
-  "name": "John Doe",
-  "companyId": "optional-company-id"
+  "name": "Cash",
+  "type": "ASSET",
+  "balance": 1000
 }
 ```
 
-**Validation Rules:**
-- `email` - Valid email format, must be unique
-- `password` - Minimum 8 characters, at least 1 uppercase, 1 number, 1 special char
-- `name` - Required, minimum 2 characters
-- `companyId` - Optional, if provided must exist
+### Get Accounts by Company
 
-**Success Response (201 Created):**
+- Method: GET
+- Path: /api/v1/account/company/:companyId
+
+### Get Single Account
+
+- Method: GET
+- Path: /api/v1/account/:accountId
+
+### Update Account
+
+- Method: PUT
+- Path: /api/v1/account/update/:accountId
+
+Example body:
+
 ```json
 {
-  "success": true,
-  "message": "User registered successfully",
-  "data": {
-    "_id": "user_id_here",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "role": "USER",
-    "createdAt": "2026-04-15T10:30:00Z"
-  }
+  "name": "Cash Updated"
 }
 ```
 
----
+### Delete Account
 
-### 2. User Login
+- Method: DELETE
+- Path: /api/v1/account/:accountId
 
-**Endpoint:**
-```
-POST /api/v1/auth/login
-```
+## Transactions
 
-**Role Access:** Public (no authentication required)
+All routes protected.
 
-**Request Body:**
-```json
-{
-  "email": "user@example.com",
-  "password": "SecurePassword123!"
-}
-```
+### Create Transaction
 
-**Success Response (200 OK):**
-```json
-{
-  "success": true,
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "_id": "user_id",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "USER",
-      "companyId": "company_id"
-    },
-    "expiresIn": "7d"
-  }
-}
-```
+- Method: POST
+- Path: /api/v1/transaction/create-transaction
+- Roles: ADMIN, ACCOUNTANT
 
----
+Example body:
 
-## Transactions Module
-
-### 1. Create Transaction (Journal Entry)
-
-**Endpoint:**
-```
-POST /api/v1/transaction/
-```
-
-**Aliases:**
-- `POST /api/v1/transaction/create-transaction` (legacy, deprecated)
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`
-
-**Request Body:**
 ```json
 {
   "description": "Office Expense",
   "paymentMode": "CASH",
   "expenseCategory": "REGULAR",
   "transactionCategory": "NORMAL",
-  "date": "2026-04-15",
   "entries": [
-    {
-      "accountId": "69cfaffe4a2906a4037adbca",
-      "type": "DEBIT",
-      "amount": 1000
-    },
-    {
-      "accountId": "69cfaffe4a2906a4037adbcb",
-      "type": "CREDIT",
-      "amount": 1000
-    }
+    { "accountId": "<accountId1>", "type": "DEBIT", "amount": 1000 },
+    { "accountId": "<accountId2>", "type": "CREDIT", "amount": 1000 }
   ]
 }
 ```
 
-**Validation Rules:**
-- `entries` - Minimum 2 entries required
-- Debit total **must equal** Credit total (double-entry principle)
-- `type` - Must be `DEBIT` or `CREDIT`
-- `amount` - Must be numeric and positive
-- All accounts must belong to logged-in user's company
+Validation rules:
 
-**Success Response (201 Created):**
+- entries must contain at least 2 rows
+- debit total must equal credit total
+- type must be DEBIT or CREDIT
+- amount must be positive
+
+### Get Petty Cash Transactions
+
+- Method: GET
+- Path: /api/v1/transaction/petty-cash
+
+### Receive Money
+
+- Method: POST
+- Path: /api/v1/transaction/receive
+
+### Send Money
+
+- Method: POST
+- Path: /api/v1/transaction/send
+
+## Ledger
+
+All routes protected.
+
+### Entries by Account
+
+- Method: GET
+- Path: /api/v1/ledger/accounts/:accountId/entries
+- Roles: ADMIN, ACCOUNTANT
+
+### Account Balance
+
+- Method: GET
+- Path: /api/v1/ledger/accounts/:accountId/balance
+
+### Running Ledger
+
+- Method: GET
+- Path: /api/v1/ledger/accounts/:accountId/ledger
+
+### Transaction History by Account
+
+- Method: GET
+- Path: /api/v1/ledger/transactions/history/:accountId
+- Query: page, limit
+
+### Trial Balance
+
+- Method: GET
+- Path: /api/v1/ledger/trial-balance
+- Roles: ADMIN, ACCOUNTANT
+
+### Petty Cash Report
+
+- Method: GET
+- Path: /api/v1/ledger/reports/petty-cash
+- Roles: ADMIN, ACCOUNTANT
+- Query (optional): startDate, endDate
+
+### Profit and Loss Report
+
+- Method: GET
+- Path: /api/v1/ledger/reports/profit-loss
+- Roles: ADMIN, ACCOUNTANT
+- Query (optional): startDate, endDate
+
+### Balance Sheet Report
+
+- Method: GET
+- Path: /api/v1/ledger/reports/balance-sheet
+- Roles: ADMIN, ACCOUNTANT
+- Query (optional): startDate, endDate
+
+## Customers
+
+All routes protected.
+
+### Create Customer
+
+- Method: POST
+- Path: /api/v1/customers/create
+
+### Get Customers by Company
+
+- Method: GET
+- Path: /api/v1/customers/company/:companyId
+
+### Get Customer
+
+- Method: GET
+- Path: /api/v1/customers/:customerId
+
+### Update Customer
+
+- Method: PUT
+- Path: /api/v1/customers/:customerId
+
+### Delete Customer
+
+- Method: DELETE
+- Path: /api/v1/customers/:customerId
+
+## Invoices
+
+All routes protected.
+
+### Create Invoice
+
+- Method: POST
+- Path: /api/v1/invoices/create
+- Roles: ADMIN, ACCOUNTANT
+
+### Mark Invoice Paid
+
+- Method: POST
+- Path: /api/v1/invoices/:invoiceId/pay
+
+## Common Errors
+
 ```json
-{
-  "success": true,
-  "message": "Transaction created successfully",
-  "data": {
-    "_id": "69d630a840173478b4740b0b",
-    "description": "Office Expense",
-    "paymentMode": "CASH",
-    "entries": [
-      { "_id": "69d630a840173478b4740b10" },
-      { "_id": "69d630a840173478b4740b11" }
-    ],
-    "date": "2026-04-15T10:40:40.642Z",
-    "status": "POSTED"
-  }
-}
+{ "success": false, "message": "Unauthorized" }
 ```
 
----
-
-### 2. Transaction History by Account
-
-**Endpoint:**
-```
-GET /api/v1/ledger/accounts/:accountId/transaction-history?page=1&limit=10
-```
-
-**Aliases:**
-- `GET /api/v1/ledger/transactions/history/:accountId` (legacy)
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`, `MANAGER`
-
-**Query Parameters:**
-- `page` - Page number (default: 1)
-- `limit` - Items per page (default: 10, max: 100)
-- `startDate` - Filter from date (optional)
-- `endDate` - Filter to date (optional)
-
-**Success Response (200 OK):**
 ```json
-{
-  "success": true,
-  "data": {
-    "entries": [
-      {
-        "_id": "69d630a840173478b4740b10",
-        "accountId": {
-          "_id": "69cfaffe4a2906a4037adbca",
-          "name": "Cash Account"
-        },
-        "type": "DEBIT",
-        "amount": 1000,
-        "createdAt": "2026-04-08T10:40:40.655Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 1
-    }
-  }
-}
+{ "success": false, "message": "Invalid token" }
 ```
 
----
-
-### 3. Ledger by Account (Running Balance)
-
-**Endpoint:**
-```
-GET /api/v1/ledger/accounts/:accountId/ledger
-```
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`, `MANAGER`
-
-**Success Response (200 OK):**
 ```json
-{
-  "success": true,
-  "data": [
-    {
-      "date": "2026-04-08T10:40:40.655Z",
-      "description": "Office Expense",
-      "debit": 1000,
-      "credit": 0,
-      "balance": 1000
-    },
-    {
-      "date": "2026-04-08T11:12:10.001Z",
-      "description": "Bank Deposit",
-      "debit": 0,
-      "credit": 300,
-      "balance": 700
-    }
-  ]
-}
+{ "success": false, "message": "Invalid Account ID" }
 ```
-
----
-
-## Accounts Module
-
-### 1. Create Account
-
-**Endpoint:**
-```
-POST /api/v1/accounts
-```
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`
-
-**Request Body:**
-```json
-{
-  "name": "Cash Account",
-  "accountType": "ASSET",
-  "accountCode": "1000",
-  "description": "Main cash account",
-  "openingBalance": 5000,
-  "currency": "USD"
-}
-```
-
-**Success Response (201 Created):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "69cfaffe4a2906a4037adbca",
-    "name": "Cash Account",
-    "accountType": "ASSET",
-    "balance": 5000,
-    "createdAt": "2026-04-15T10:30:00Z"
-  }
-}
-```
-
----
-
-### 2. List Accounts
-
-**Endpoint:**
-```
-GET /api/v1/accounts?page=1&limit=10
-```
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`, `MANAGER`
-
-**Query Parameters:**
-- `page` - Page number (default: 1)
-- `limit` - Items per page (default: 10, max: 100)
-- `accountType` - Filter by type (optional)
-
-**Success Response (200 OK):**
-```json
-{
-  "success": true,
-  "data": [ /* account array */ ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 15,
-    "pages": 2
-  }
-}
-```
-
----
-
-## Invoices Module
-
-### 1. Create Invoice
-
-**Endpoint:**
-```
-POST /api/v1/invoices
-```
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`
-
-**Success Response (201 Created):**
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "69d630a840173478b4740b0b",
-    "invoiceNumber": "INV-2026-001",
-    "status": "DRAFT"
-  }
-}
-```
-
----
-
-### 2. List Invoices
-
-**Endpoint:**
-```
-GET /api/v1/invoices?page=1&limit=10
-```
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`, `MANAGER`
-
----
-
-## Customers Module
-
-### 1. Create Customer
-
-**Endpoint:**
-```
-POST /api/v1/customers
-```
-
-**Role Access:** `ADMIN`, `ACCOUNTANT`
-
----
-
-### 2. List Customers
-
-**Endpoint:**
-```
-GET /api/v1/customers?page=1&limit=10
-```
-
-**Role Access:** All authenticated users
-
----
-
-## Error Handling
-
-### Error Code Reference
-
-| Error Code | HTTP Status | Meaning |
-|-----------|------------|---------|
-| `AUTH_INVALID` | 401 | Invalid credentials |
-| `AUTH_UNAUTHORIZED` | 401 | No valid token |
-| `AUTH_INSUFFICIENT_PERMISSIONS` | 403 | User lacks required role |
-| `VALIDATION_ERROR` | 422 | Input validation failed |
-| `LEDGER_IMBALANCE` | 422 | Debit ≠ Credit |
-| `EMAIL_EXISTS` | 409 | Email already registered |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
-
----
-
-## Rate Limiting
-
-### Default Limits
-
-- **15 requests per minute** for authentication endpoints
-- **100 requests per 15 minutes** for general API endpoints
-- **1000 requests per hour** for list endpoints
-
-### Rate Limit Headers
-
-```
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 97
-X-RateLimit-Reset: 1681234567
-```
-
----
-
-## Best Practices
-
-✅ Include `Authorization` header with JWT token  
-✅ Use pagination for large datasets  
-✅ Check `response.success` before processing data  
-✅ Handle specific error codes appropriately  
-✅ Implement exponential backoff for retries
