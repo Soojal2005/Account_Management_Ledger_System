@@ -1,22 +1,110 @@
 # Jerry Accounts API Routes
 
-Base URL
-- `http://localhost:5000/api/v1`
+This reference is aligned to the currently implemented Express routes.
 
-Authentication
-- Header required on all routes below:
-- `Authorization: Bearer <JWT_TOKEN>`
+## Base
 
-## 1) Create Transaction
+- Base URL: http://localhost:5000/api/v1
+- Auth header for protected routes: Authorization: Bearer <JWT_TOKEN>
 
-Route
-- `POST /api/v1/transaction/`
-- Legacy alias (still works): `POST /api/v1/transaction/create-transaction`
+## Auth
 
-Role Access
-- `ADMIN`, `ACCOUNTANT`
+### Register
 
-Request Body
+- Method: POST
+- Path: /api/v1/auth/register
+- Auth: No
+
+Example body:
+
+```json
+{
+  "name": "Admin User",
+  "email": "admin@example.com",
+  "password": "123456",
+  "role": "ADMIN",
+  "companyName": "Demo Pvt Ltd"
+}
+```
+
+Success: 201
+
+### Login
+
+- Method: POST
+- Path: /api/v1/auth/login
+- Auth: No
+
+Example body:
+
+```json
+{
+  "email": "admin@example.com",
+  "password": "123456"
+}
+```
+
+Success: 200
+
+## Accounts
+
+All routes protected.
+
+### Create Account
+
+- Method: POST
+- Path: /api/v1/account/creation
+
+Example body:
+
+```json
+{
+  "name": "Cash",
+  "type": "ASSET",
+  "balance": 1000
+}
+```
+
+### Get Accounts by Company
+
+- Method: GET
+- Path: /api/v1/account/company/:companyId
+
+### Get Single Account
+
+- Method: GET
+- Path: /api/v1/account/:accountId
+
+### Update Account
+
+- Method: PUT
+- Path: /api/v1/account/update/:accountId
+
+Example body:
+
+```json
+{
+  "name": "Cash Updated"
+}
+```
+
+### Delete Account
+
+- Method: DELETE
+- Path: /api/v1/account/:accountId
+
+## Transactions
+
+All routes protected.
+
+### Create Transaction
+
+- Method: POST
+- Path: /api/v1/transaction/create-transaction
+- Roles: ADMIN, ACCOUNTANT
+
+Example body:
+
 ```json
 {
   "description": "Office Expense",
@@ -24,146 +112,141 @@ Request Body
   "expenseCategory": "REGULAR",
   "transactionCategory": "NORMAL",
   "entries": [
-    {
-      "accountId": "69cfaffe4a2906a4037adbca",
-      "type": "DEBIT",
-      "amount": 1000
-    },
-    {
-      "accountId": "69cfaffe4a2906a4037adbcb",
-      "type": "CREDIT",
-      "amount": 1000
-    }
+    { "accountId": "<accountId1>", "type": "DEBIT", "amount": 1000 },
+    { "accountId": "<accountId2>", "type": "CREDIT", "amount": 1000 }
   ]
 }
 ```
 
-Rules
-- `entries` must contain at least 2 lines.
-- Debit total must equal Credit total.
-- `type` must be `DEBIT` or `CREDIT`.
-- `amount` must be numeric and positive.
-- Accounts should belong to the same company as the logged-in user.
+Validation rules:
 
-Success Response (example)
-```json
-{
-  "success": true,
-  "data": {
-    "_id": "69d630a840173478b4740b0b",
-    "description": "Office Expense",
-    "paymentMode": "CASH",
-    "expenseCategory": "REGULAR",
-    "transactionCategory": "NORMAL",
-    "companyId": "69ce5fd53dce7bacfb369a8f",
-    "entries": [
-      { "_id": "69d630a840173478b4740b10" },
-      { "_id": "69d630a840173478b4740b11" }
-    ],
-    "date": "2026-04-08T10:40:40.642Z"
-  }
-}
-```
+- entries must contain at least 2 rows
+- debit total must equal credit total
+- type must be DEBIT or CREDIT
+- amount must be positive
 
-## 2) Transaction History By Account ID
+### Get Petty Cash Transactions
 
-Route
-- `GET /api/v1/ledger/accounts/:accountId/transaction-history`
-- Legacy alias (still works): `GET /api/v1/ledger/transactions/history/:accountId`
+- Method: GET
+- Path: /api/v1/transaction/petty-cash
 
-Query Params (optional)
-- `page` (default: `1`)
-- `limit` (default: `10`)
+### Receive Money
 
-Example
-- `GET /api/v1/ledger/accounts/69cfaffe4a2906a4037adbca/transaction-history?page=1&limit=10`
+- Method: POST
+- Path: /api/v1/transaction/receive
 
-Success Response (example)
-```json
-{
-  "success": true,
-  "data": {
-    "entries": [
-      {
-        "_id": "69d630a840173478b4740b10",
-        "accountId": {
-          "_id": "69cfaffe4a2906a4037adbca",
-          "name": "Cash Account"
-        },
-        "type": "DEBIT",
-        "amount": 1000,
-        "createdAt": "2026-04-08T10:40:40.655Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 1
-    }
-  }
-}
-```
+### Send Money
 
-Empty Response (meaning no entries in your company for this account)
-```json
-{
-  "success": true,
-  "message": "No transaction entries found for this account in your company.",
-  "data": {
-    "entries": [],
-    "pagination": {
-      "page": 1,
-      "limit": 10,
-      "total": 0
-    }
-  }
-}
-```
+- Method: POST
+- Path: /api/v1/transaction/send
 
-## 3) Ledger By Account ID (Running Balance)
+## Ledger
 
-Route
-- `GET /api/v1/ledger/accounts/:accountId/ledger`
+All routes protected.
 
-Example
-- `GET /api/v1/ledger/accounts/69cfaffe4a2906a4037adbca/ledger`
+### Entries by Account
 
-Success Response (example)
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "date": "2026-04-08T10:40:40.655Z",
-      "description": "Office Expense",
-      "debit": 1000,
-      "credit": 0,
-      "balance": 1000
-    },
-    {
-      "date": "2026-04-08T11:12:10.001Z",
-      "description": "Bank Deposit",
-      "debit": 0,
-      "credit": 300,
-      "balance": 700
-    }
-  ]
-}
-```
+- Method: GET
+- Path: /api/v1/ledger/accounts/:accountId/entries
+- Roles: ADMIN, ACCOUNTANT
 
-Common Error Responses
+### Account Balance
+
+- Method: GET
+- Path: /api/v1/ledger/accounts/:accountId/balance
+
+### Running Ledger
+
+- Method: GET
+- Path: /api/v1/ledger/accounts/:accountId/ledger
+
+### Transaction History by Account
+
+- Method: GET
+- Path: /api/v1/ledger/transactions/history/:accountId
+- Query: page, limit
+
+### Trial Balance
+
+- Method: GET
+- Path: /api/v1/ledger/trial-balance
+- Roles: ADMIN, ACCOUNTANT
+
+### Petty Cash Report
+
+- Method: GET
+- Path: /api/v1/ledger/reports/petty-cash
+- Roles: ADMIN, ACCOUNTANT
+- Query (optional): startDate, endDate
+
+### Profit and Loss Report
+
+- Method: GET
+- Path: /api/v1/ledger/reports/profit-loss
+- Roles: ADMIN, ACCOUNTANT
+- Query (optional): startDate, endDate
+
+### Balance Sheet Report
+
+- Method: GET
+- Path: /api/v1/ledger/reports/balance-sheet
+- Roles: ADMIN, ACCOUNTANT
+- Query (optional): startDate, endDate
+
+## Customers
+
+All routes protected.
+
+### Create Customer
+
+- Method: POST
+- Path: /api/v1/customers/create
+
+### Get Customers by Company
+
+- Method: GET
+- Path: /api/v1/customers/company/:companyId
+
+### Get Customer
+
+- Method: GET
+- Path: /api/v1/customers/:customerId
+
+### Update Customer
+
+- Method: PUT
+- Path: /api/v1/customers/:customerId
+
+### Delete Customer
+
+- Method: DELETE
+- Path: /api/v1/customers/:customerId
+
+## Invoices
+
+All routes protected.
+
+### Create Invoice
+
+- Method: POST
+- Path: /api/v1/invoices/create
+- Roles: ADMIN, ACCOUNTANT
+
+### Mark Invoice Paid
+
+- Method: POST
+- Path: /api/v1/invoices/:invoiceId/pay
+
+## Common Errors
+
 ```json
 { "success": false, "message": "Unauthorized" }
 ```
+
 ```json
 { "success": false, "message": "Invalid token" }
 ```
+
 ```json
 { "success": false, "message": "Invalid Account ID" }
-```
-```json
-{ "success": false, "message": "Account not found" }
-```
-```json
-{ "success": false, "message": "Account does not belong to your company" }
 ```
