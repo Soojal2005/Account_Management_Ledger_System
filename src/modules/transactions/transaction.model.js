@@ -15,6 +15,11 @@ const transactionSchema = new mongoose.Schema(
       type: String,
     },
 
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      default: null,
+    },
     expenseCategory: {
       type: String,
       enum: ["PETTY", "REGULAR"],
@@ -25,6 +30,7 @@ const transactionSchema = new mongoose.Schema(
       type: String,
       enum: ["PETTY_CASH", "NORMAL", "BANK", "ADJUSTMENT"],
       default: "NORMAL",
+      required : true
     },
 
     companyId: {

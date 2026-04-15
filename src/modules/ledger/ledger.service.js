@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import {Transaction} from "../transactions/transaction.model.js";
 import {Entry} from "./entry.model.js";
 import AppError from "../../utils/AppError.js";
+import { Account } from "../accounts/account.model.js";
 
 // export const createTransaction = async ({
 //   description,
@@ -34,14 +35,26 @@ import AppError from "../../utils/AppError.js";
 
 export const getTransactionHistory = async (
   accountId,
+  companyId,
   page = 1,
   limit = 10
 ) => {
   const skip = (page - 1) * limit;
 
+  const account = await Account.findById(accountId);
+
+  if (!account) {
+    throw new AppError("Account not found", 404);
+  }
+
+  if (account.companyId.toString() !== companyId.toString()) {
+    throw new AppError("Account does not belong to your company", 403);
+  }
+
   // 🔥 1. Fetch entries
   const entries = await Entry.find({
     accountId: new mongoose.Types.ObjectId(accountId),
+    companyId,
   })
     .sort({ createdAt: -1 }) // latest first
     .skip(skip)
@@ -51,7 +64,21 @@ export const getTransactionHistory = async (
   // 🔥 2. Total count (for pagination)
   const total = await Entry.countDocuments({
     accountId: new mongoose.Types.ObjectId(accountId),
+    companyId,
   });
+
+  if (total === 0) {
+    const totalAcrossAllCompanies = await Entry.countDocuments({
+      accountId: new mongoose.Types.ObjectId(accountId),
+    });
+
+    if (totalAcrossAllCompanies > 0) {
+      throw new AppError(
+        "Entries exist for this account, but are mapped to a different company. Please verify companyId mapping in transaction entries.",
+        409
+      );
+    }
+  }
 
   return {
     entries,
@@ -63,42 +90,56 @@ export const getTransactionHistory = async (
   };
 };
 
-export const getTrialBalance = async () => {
+export const getTrialBalance = async (companyId) => {
   const result = await Entry.aggregate([
-    {
-      $group: {
-        _id: "$accountId",
-        totalDebit: {
-          $sum: {
-            $cond: [{ $eq: ["$type", "debit"] }, "$amount", 0],
-          },
-        },
-        totalCredit: {
-          $sum: {
-            $cond: [{ $eq: ["$type", "credit"] }, "$amount", 0],
-          },
-        },
+  {
+    $match: {
+      companyId: new mongoose.Types.ObjectId(companyId),
+    }
+  },
+  {
+    $group: {
+      _id: "$accountId",
+      totalDebit: {
+        $sum: {
+          $cond: [
+            { $eq: ["$type", "DEBIT"] },
+            "$amount",
+            0
+          ]
+        }
       },
-    },
-    {
-      $lookup: {
-        from: "accounts",
-        localField: "_id",
-        foreignField: "_id",
-        as: "account",
-      },
-    },
-    {
-      $unwind: "$account",
-    },
-    {
-      $project: {
-        accountName: "$account.name",
-        totalDebit: 1,
-        totalCredit: 1,
-      },
-    },
-  ]);
+      totalCredit: {
+        $sum: {
+          $cond: [
+            { $eq: ["$type", "CREDIT"] },
+            "$amount",
+            0
+          ]
+        }
+      }
+    }
+  },
+  {
+    $lookup: {
+      from: "accounts",
+      localField: "_id",
+      foreignField: "_id",
+      as: "account"
+    }
+  },
+  {
+    $unwind: "$account"
+  },
+  {
+    $project: {
+      accountId: "$_id",
+      accountName: "$account.name",
+      totalDebit: 1,
+      totalCredit: 1
+    }
+  }
+]);
 
   // 👉 Final check
   const totalDebit = result.reduce((sum, acc) => sum + acc.totalDebit, 0);
@@ -149,10 +190,67 @@ export const getEntriesByAccount = async (accountId) => {
   return entries;
 };
 
+export const getAccountBalance = async (accountId, companyId) => {
+  const account = await Account.findById(accountId).select("name type companyId");
 
-export const getLedger = async (accountId) => {
+  if (!account) {
+    throw new AppError("Account not found", 404);
+  }
+
+  if (account.companyId.toString() !== companyId.toString()) {
+    throw new AppError("Account does not belong to your company", 403);
+  }
+
+  const summary = await Entry.aggregate([
+    {
+      $match: {
+        accountId: new mongoose.Types.ObjectId(accountId),
+        companyId: new mongoose.Types.ObjectId(companyId),
+      },
+    },
+    {
+      $group: {
+        _id: "$accountId",
+        totalDebit: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "DEBIT"] }, "$amount", 0],
+          },
+        },
+        totalCredit: {
+          $sum: {
+            $cond: [{ $eq: ["$type", "CREDIT"] }, "$amount", 0],
+          },
+        },
+      },
+    },
+  ]);
+
+  const totals = summary[0] || { totalDebit: 0, totalCredit: 0 };
+
+  return {
+    accountId: account._id,
+    accountName: account.name,
+    accountType: account.type,
+    totalDebit: totals.totalDebit,
+    totalCredit: totals.totalCredit,
+    balance: totals.totalDebit - totals.totalCredit,
+  };
+};
+
+
+export const getLedger = async (accountId, companyId) => {
+  const account = await Account.findById(accountId);
+
+  if (!account) {
+    throw new AppError("Account not found", 404);
+  }
+
+  if (account.companyId.toString() !== companyId.toString()) {
+    throw new AppError("Account does not belong to your company", 403);
+  }
+
   // ✅ Step 1: Fetch entries
-  const entries = await Entry.find({ accountId })
+  const entries = await Entry.find({ accountId, companyId })
     .populate("transactionId", "description")
     .sort({ createdAt: 1 });
 
@@ -254,19 +352,36 @@ export const getPettyCashReport = async (companyId, startDate, endDate) => {
 
 
 export const getProfitLossReport = async (companyId, startDate, endDate) => {
-  const matchStage = {
-    companyId,
-  };
+  const companyObjectId = new mongoose.Types.ObjectId(companyId);
 
+  const dateMatch = {};
   if (startDate && endDate) {
-    matchStage.date = {
+    dateMatch["transaction.date"] = {
       $gte: new Date(startDate),
       $lte: new Date(endDate),
     };
   }
 
   const result = await Entry.aggregate([
-    // 🔥 Join with accounts
+    {
+      $match: {
+        companyId: companyObjectId,
+      },
+    },
+    {
+      $lookup: {
+        from: "transactions",
+        localField: "transactionId",
+        foreignField: "_id",
+        as: "transaction",
+      },
+    },
+    { $unwind: "$transaction" },
+    {
+      $match: {
+        ...dateMatch,
+      },
+    },
     {
       $lookup: {
         from: "accounts",
@@ -276,20 +391,63 @@ export const getProfitLossReport = async (companyId, startDate, endDate) => {
       },
     },
     { $unwind: "$account" },
-
-    // ✅ Filter only Income & Expense accounts
     {
       $match: {
-        ...matchStage,
         "account.type": { $in: ["INCOME", "EXPENSE"] },
       },
     },
-
-    // 🔥 Group by account type
+    {
+      $project: {
+        accountType: "$account.type",
+        signedAmount: {
+          $switch: {
+            branches: [
+              {
+                case: {
+                  $and: [
+                    { $eq: ["$account.type", "INCOME"] },
+                    { $eq: ["$type", "CREDIT"] },
+                  ],
+                },
+                then: "$amount",
+              },
+              {
+                case: {
+                  $and: [
+                    { $eq: ["$account.type", "INCOME"] },
+                    { $eq: ["$type", "DEBIT"] },
+                  ],
+                },
+                then: { $multiply: ["$amount", -1] },
+              },
+              {
+                case: {
+                  $and: [
+                    { $eq: ["$account.type", "EXPENSE"] },
+                    { $eq: ["$type", "DEBIT"] },
+                  ],
+                },
+                then: "$amount",
+              },
+              {
+                case: {
+                  $and: [
+                    { $eq: ["$account.type", "EXPENSE"] },
+                    { $eq: ["$type", "CREDIT"] },
+                  ],
+                },
+                then: { $multiply: ["$amount", -1] },
+              },
+            ],
+            default: 0,
+          },
+        },
+      },
+    },
     {
       $group: {
-        _id: "$account.type",
-        total: { $sum: "$amount" },
+        _id: "$accountType",
+        total: { $sum: "$signedAmount" },
       },
     },
   ]);

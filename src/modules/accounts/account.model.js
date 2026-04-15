@@ -9,9 +9,20 @@ const accountSchema = new mongoose.Schema({
     type: String,
     enum: ["ASSET", "LIABILITY", "INCOME", "EXPENSE", "EQUITY"],
     required: true,
+    default: "ASSET"
   },
 
-  // optional but powerful
+  parentAccountId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Account",
+  },
+
+  companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+    },
+
   subtype: {
     type: String,
   },
@@ -20,7 +31,6 @@ const accountSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-  
- 
-});
+
+},{timestamps: true});
 export const Account = mongoose.model("Account", accountSchema);

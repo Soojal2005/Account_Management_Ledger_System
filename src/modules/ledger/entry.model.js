@@ -14,6 +14,12 @@ const entrySchema = new mongoose.Schema(
       required: true,
       index: true, // 🔥 important
     },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      required: true,
+      index: true,
+    },
     type: {
       type: String,
       enum: ["DEBIT", "CREDIT"],

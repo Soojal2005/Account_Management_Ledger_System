@@ -2,21 +2,26 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../model/user.model.js";
 import { Company } from "../model/company.model.js";
+import AppError from "../utils/AppError.js";
 
-export const registerUser = async ({ name, email, password, companyName }) => {
+export const registerUser = async ({ name, email, password, companyName,role }) => {
+  if (!name || !email || !password || !companyName) {
+    throw new AppError("Name, email, password and companyName are required", 400);
+  }
+
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    throw new Error("User already exists");
+    throw new AppError("User already exists", 400);
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // 1️⃣ Create user (temporary without company)
   const user = await User.create({
-    name,
-    email,
+    name : name,
+    email: email,
     password: hashedPassword,
-    role: "OWNER",
+    role: role || "USER", // Default to user role
   });
 
   // 2️⃣ Create company
@@ -46,13 +51,17 @@ export const registerUser = async ({ name, email, password, companyName }) => {
 
 
 export const loginUser = async ({ email, password }) => {
+  if (!email || !password) {
+    throw new AppError("Email and password are required", 400);
+  }
+
   const user = await User.findOne({ email }).select("+password");
 
-  if (!user) throw new Error("Invalid credentials");
+  if (!user) throw new AppError("Invalid credentials", 401);
 
   const isMatch = await bcrypt.compare(password, user.password);
 
-  if (!isMatch) throw new Error("Invalid credentials");
+  if (!isMatch) throw new AppError("Invalid credentials", 401);
 
   const token = jwt.sign(
     {
@@ -61,7 +70,7 @@ export const loginUser = async ({ email, password }) => {
       role: user.role,
     },
     process.env.JWT_SECRET,
-    { expiresIn: "7d" }
+    { expiresIn: process.env.JWT_EXPIRES_IN }
   );
 
   return { user, token };
